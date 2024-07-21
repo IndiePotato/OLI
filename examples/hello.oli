@@ -1,0 +1,2 @@
+var my_string = "Hello, Oli!"
+say(my_string);

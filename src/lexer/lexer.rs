@@ -68,9 +68,76 @@ impl Lexer {
            '+' => self.add_token(TokenType::Plus),
            ';' => self.add_token(TokenType::SemiColon),
            '*' => self.add_token(TokenType::Star),
+           '!' => {
+                let token = if self.char_match('=') {
+                    // !=
+                    TokenType::BangEqual
+                } else {
+                    TokenType::Bang
+                };
+                self.add_token(token);
+           },
+           '=' => {
+                let token = if self.char_match('=') {
+                    TokenType::EqualEqual
+                } else {
+                    TokenType::Equal
+                };
+                self.add_token(token);
+           },
+           '<' => {
+                let token = if self.char_match('=') {
+                    TokenType::LessEqual
+                } else {
+                    TokenType::Less
+                };
+                self.add_token(token);
+           },
+           '>' => {
+                let token = if self.char_match('=') {
+                    TokenType::GreaterEqual
+                } else {
+                    TokenType::Greater
+                };
+                self.add_token(token);
+           },
+           '/' => {
+                if self.char_match('/') {
+                    loop {
+                        if self.peek() == '\n' || self.is_at_end() {
+                            break;
+                        }
+                        self.advance();
+                    }
+                } else {
+                    self.add_token(TokenType::Slash)
+                }
+           },
+           ' ' | '\r' | '\t' => {},
+           '\n' => self.line += 1,
            _ => return Err(format!("Unrecognized char at line {}: {}", self.line, c)),
        }
-       todo!()
+
+       Ok(())
+   }
+
+   fn peek(self: &Self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+        self.source.as_bytes()[self.current] as char
+   }
+
+   fn char_match(self: &mut Self, c: char) -> bool {
+       if self.is_at_end() {
+        return false;
+       }
+       if self.source.as_bytes()[self.current] as char != c {
+        return false;
+       } else {
+        self.current += 1;
+        return true;
+       }
    }
 
    fn advance(self: &mut Self) -> char {
@@ -99,4 +166,40 @@ impl Lexer {
            }
        );
    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn handle_one_char_tokens() {
+        let source = "(( )) }{";
+        let mut lexer = Lexer::new(source);
+        lexer.scan_tokens();
+
+        assert_eq!(lexer.tokens.len(), 7);
+        assert_eq!(lexer.tokens[0].token_type, TokenType::LeftParen);
+        assert_eq!(lexer.tokens[1].token_type, TokenType::LeftParen);
+        assert_eq!(lexer.tokens[2].token_type, TokenType::RightParen);
+        assert_eq!(lexer.tokens[3].token_type, TokenType::RightParen);
+        assert_eq!(lexer.tokens[4].token_type, TokenType::RightBrace);
+        assert_eq!(lexer.tokens[5].token_type, TokenType::LeftBrace);
+        assert_eq!(lexer.tokens[6].token_type, TokenType::Eof);
+    }
+
+    #[test]
+    fn handle_two_char_tokens() {
+        let source = "! != == >= <=";
+        let mut lexer = Lexer::new(source);
+        lexer.scan_tokens();
+
+        assert_eq!(lexer.tokens.len(), 6);
+        assert_eq!(lexer.tokens[0].token_type, TokenType::Bang);
+        assert_eq!(lexer.tokens[1].token_type, TokenType::BangEqual);
+        assert_eq!(lexer.tokens[2].token_type, TokenType::EqualEqual);
+        assert_eq!(lexer.tokens[3].token_type, TokenType::GreaterEqual);
+        assert_eq!(lexer.tokens[4].token_type, TokenType::LessEqual);
+        assert_eq!(lexer.tokens[5].token_type, TokenType::Eof);
+    }
 }

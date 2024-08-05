@@ -115,6 +115,7 @@ impl Lexer {
            },
            ' ' | '\r' | '\t' => {},
            '\n' => self.line += 1,
+           '"' => self.string()?, 
            _ => return Err(format!("Unrecognized char at line {}: {}", self.line, c)),
        }
 
@@ -125,14 +126,33 @@ impl Lexer {
         if self.is_at_end() {
             return '\0';
         }
-        self.source.as_bytes()[self.current] as char
+        self.source.chars().nth(self.current).unwrap()
+   }
+
+   fn string(self: &mut Self) -> Result<(), String> { 
+    while self.peek() != '"' && !self.is_at_end() {
+        if self.peek() == '\n' {
+            self.line += 1;
+        }
+        self.advance();
+    }
+    if self.is_at_end() {
+        return Err("Unterminated string.".to_string());
+    }
+
+    self.advance();
+    let value = &self.source[self.start + 1.. self.current-1];
+    self.add_token_literal(TokenType::StringLiteral, Some(LiteralValue::StringValue(value.to_string())));
+
+    Ok(())
+
    }
 
    fn char_match(self: &mut Self, c: char) -> bool {
        if self.is_at_end() {
         return false;
        }
-       if self.source.as_bytes()[self.current] as char != c {
+       if self.source.chars().nth(self.current).unwrap() != c {
         return false;
        } else {
         self.current += 1;
@@ -141,10 +161,10 @@ impl Lexer {
    }
 
    fn advance(self: &mut Self) -> char {
-       let c = self.source.as_bytes()[self.current];
+       let c = self.source.chars().nth(self.current).unwrap();
        self.current += 1;
 
-       c as char
+       c
    }
 
    fn add_token(self: &mut Self, token_type: TokenType) {
@@ -153,10 +173,10 @@ impl Lexer {
 
    fn add_token_literal(self: &mut Self, token_type: TokenType, literal: Option<LiteralValue>) {
        let mut text = "".to_string();
-       let bytes = self.source.as_bytes();
-       for i in self.start .. self.current {
-           text.push(bytes[i] as char);
-       }
+       let lit = self.source[self.start..self.current]
+           .chars()
+           .map(|ch| text.push(ch));
+
        self.tokens.push(
            Token {
                token_type: token_type,
@@ -176,7 +196,7 @@ mod tests {
     fn handle_one_char_tokens() {
         let source = "(( )) }{";
         let mut lexer = Lexer::new(source);
-        lexer.scan_tokens();
+        let _ = lexer.scan_tokens();
 
         assert_eq!(lexer.tokens.len(), 7);
         assert_eq!(lexer.tokens[0].token_type, TokenType::LeftParen);
@@ -192,7 +212,7 @@ mod tests {
     fn handle_two_char_tokens() {
         let source = "! != == >= <=";
         let mut lexer = Lexer::new(source);
-        lexer.scan_tokens();
+        let _ = lexer.scan_tokens();
 
         assert_eq!(lexer.tokens.len(), 6);
         assert_eq!(lexer.tokens[0].token_type, TokenType::Bang);
@@ -201,5 +221,48 @@ mod tests {
         assert_eq!(lexer.tokens[3].token_type, TokenType::GreaterEqual);
         assert_eq!(lexer.tokens[4].token_type, TokenType::LessEqual);
         assert_eq!(lexer.tokens[5].token_type, TokenType::Eof);
+    }
+
+    #[test]
+    fn handle_string_literal() {
+        let source = r#""ABC""#;
+        let mut lexer = Lexer::new(source);
+        let _ = lexer.scan_tokens().unwrap();
+
+        assert_eq!(lexer.tokens.len(), 2);
+        assert_eq!(lexer.tokens[0].token_type, TokenType::StringLiteral);
+        assert_eq!(lexer.tokens[1].token_type, TokenType::Eof);
+
+    
+        match lexer.tokens[0].literal.as_ref().unwrap() {
+            LiteralValue::StringValue(val) => assert_eq!(val, "ABC"),
+            _ => panic!("Incorrect literal type"),
+        }
+    }
+
+    #[test]
+    fn handle_unterminated_string() {
+        let source = r#""ABC"#;
+        let mut lexer = Lexer::new(source);
+        let result = lexer.scan_tokens();
+        match result {
+            Err(_) => (),
+            _ => panic!("Should have recognised unterminated string.")
+        }
+    }
+
+    #[test]
+    fn handle_multiline_string() {
+        let source = "\"ABC\ndef\"";
+        let mut lexer = Lexer::new(source);
+        let _ = lexer.scan_tokens().unwrap();
+        
+        assert_eq!(lexer.tokens.len(), 2);
+        assert_eq!(lexer.tokens[0].token_type, TokenType::StringLiteral);
+
+        match lexer.tokens[0].literal.as_ref().unwrap() {
+            LiteralValue::StringValue(val) => assert_eq!(val, "ABC\ndef"),
+            _ => panic!("Incorrect literal type"),
+        }
     }
 }

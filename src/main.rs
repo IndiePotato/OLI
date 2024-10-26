@@ -2,15 +2,15 @@ mod lexer;
 
 use std::env;
 use std::fs;
-use std::process::exit;
 use std::io::{self, BufRead, Write};
+use std::process::exit;
 
 use lexer::lexer::Lexer;
 
 fn run_file(path: &str) -> Result<(), String> {
     match fs::read_to_string(path) {
         Err(msg) => Err(msg.to_string()),
-        Ok(contents) => run(&contents)
+        Ok(contents) => run(&contents),
     }
 }
 
@@ -35,12 +35,12 @@ fn run_prompt() -> Result<(), String> {
         let stdin = io::stdin();
         let mut handle = stdin.lock();
         match handle.read_line(&mut buffer) {
-           Ok(n) => {
-               if n <= 1 {
-                   return Ok(())
-               }
-           },
-           Err(_) => return Err("Couldnt read line".to_string()),
+            Ok(n) => {
+                if n <= 1 {
+                    return Ok(());
+                }
+            }
+            Err(_) => return Err("Couldnt read line".to_string()),
         }
         println!("ECHO {}", buffer);
         match run(&buffer) {

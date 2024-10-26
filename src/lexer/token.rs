@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenType {
     // Single-Character Tokens
     LeftParen,
@@ -30,24 +30,24 @@ pub enum TokenType {
     Class,
     Else,
     False,
-    Fun,
+    Function,
     For,
     If,
-    Nil,
+    None,
     Or,
     Return,
     Super,
     This,
     True,
-    Var,
+    Variable,
     While,
     Eof,
     // Built-in Functions
-    Say
+    Say,
 }
 
 impl std::fmt::Display for TokenType {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result { 
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -65,16 +65,21 @@ pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
     pub literal: Option<LiteralValue>,
-    pub line_number: usize
+    pub line_number: usize,
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, literal: Option<LiteralValue>, line_number: usize) -> Self {
+    pub fn new(
+        token_type: TokenType,
+        lexeme: String,
+        literal: Option<LiteralValue>,
+        line_number: usize,
+    ) -> Self {
         Self {
             token_type,
             lexeme,
             literal,
-            line_number
+            line_number,
         }
     }
 

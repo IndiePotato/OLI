@@ -20,7 +20,7 @@ fn get_keywords() -> HashMap<&'static str, TokenType> {
         ("for", TokenType::For),
         ("fun", TokenType::Function),
         ("if", TokenType::If),
-        ("None", TokenType::None),
+        ("Nil", TokenType::Nil),
         ("or", TokenType::Or),
         ("say", TokenType::Say),
         ("return", TokenType::Return),

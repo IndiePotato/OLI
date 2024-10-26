@@ -1,3 +1,4 @@
+mod ast;
 mod lexer;
 
 use std::env;
@@ -5,6 +6,7 @@ use std::fs;
 use std::io::{self, BufRead, Write};
 use std::process::exit;
 
+use ast::expression::Expression;
 use lexer::lexer::Lexer;
 
 fn run_file(path: &str) -> Result<(), String> {

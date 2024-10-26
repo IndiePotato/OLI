@@ -12,6 +12,7 @@ pub enum TokenType {
     SemiColon,
     Slash,
     Star,
+
     // One or Two Character Tokens
     Bang,
     BangEqual,
@@ -21,10 +22,12 @@ pub enum TokenType {
     GreaterEqual,
     Less,
     LessEqual,
+
     // Literals
     Identifier,
     StringLiteral,
     Number,
+
     // Keywords
     And,
     Class,
@@ -33,7 +36,7 @@ pub enum TokenType {
     Function,
     For,
     If,
-    None,
+    Nil,
     Or,
     Return,
     Super,
@@ -41,9 +44,11 @@ pub enum TokenType {
     True,
     Variable,
     While,
-    Eof,
+
     // Built-in Functions
     Say,
+
+    Eof,
 }
 
 impl std::fmt::Display for TokenType {

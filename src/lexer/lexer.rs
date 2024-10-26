@@ -54,6 +54,10 @@ impl Lexer {
        self.current >= self.source.len()
    }
 
+   fn is_digit(self: &Self, ch: char) -> bool {
+    ch as u8 >= '0' as u8 && ch as u8 <= '9' as u8
+   }
+
    fn scan_token(self: &mut Self) -> Result<(), String> {
        let c = self.advance();
 
@@ -115,9 +119,15 @@ impl Lexer {
            },
            ' ' | '\r' | '\t' => {},
            '\n' => self.line += 1,
-           '"' => self.string()?, 
-           _ => return Err(format!("Unrecognized char at line {}: {}", self.line, c)),
-       }
+           '"' => self.string()?,
+           c => {
+               if self.is_digit(c) {
+                   self.number();
+               } else {
+                   return Err(format!("Unrecognized char at line {}: {}", self.line, c));
+               }
+           }
+        }
 
        Ok(())
    }
@@ -127,6 +137,36 @@ impl Lexer {
             return '\0';
         }
         self.source.chars().nth(self.current).unwrap()
+   }
+
+   fn peek_next(self: &Self) -> char {
+    if self.current + 1 >= self.source.len() {
+        return '\0';
+    }
+
+    self.source.chars().nth(self.current + 1).unwrap()
+   }
+
+   fn number(self: &mut Self) -> Result<(), String> {
+    while self.is_digit(self.peek()) {
+        self.advance();
+    }
+    // Look for a decimal point
+    if self.peek() == '.' && self.is_digit(self.peek_next()) {
+        self.advance(); // Consume the decimal point
+
+        while self.is_digit(self.peek()) {
+            self.advance();
+        }
+    }
+    let substring = &self.source[self.start..self.current];
+    let value = substring.parse::<f64>();
+    match value {
+        Ok(value) => self.add_token_literal(TokenType::Number, Some(LiteralValue::FValue(value))),
+        Err(_) => return Err(format!("Could not parse number: {}", substring))
+    }
+    
+    Ok(())
    }
 
    fn string(self: &mut Self) -> Result<(), String> { 
@@ -173,7 +213,7 @@ impl Lexer {
 
    fn add_token_literal(self: &mut Self, token_type: TokenType, literal: Option<LiteralValue>) {
        let mut text = "".to_string();
-       let lit = self.source[self.start..self.current]
+       self.source[self.start..self.current]
            .chars()
            .map(|ch| text.push(ch));
 
@@ -259,9 +299,33 @@ mod tests {
         
         assert_eq!(lexer.tokens.len(), 2);
         assert_eq!(lexer.tokens[0].token_type, TokenType::StringLiteral);
-
         match lexer.tokens[0].literal.as_ref().unwrap() {
-            LiteralValue::StringValue(val) => assert_eq!(val, "ABC\ndef"),
+            LiteralValue::StringValue(val) => assert_eq!(*val, "ABC\ndef"),
+            _ => panic!("Incorrect literal type"),
+        }
+    }
+
+    #[test]
+    fn number_literals() {
+        let source = "123.123\n321.0\n5";
+        let mut lexer = Lexer::new(source);
+        lexer.scan_tokens().unwrap();
+        assert_eq!(lexer.tokens.len(), 4);
+
+        for i in 0..3 {
+            assert_eq!(lexer.tokens[i].token_type, TokenType::Number);
+        }
+
+        match lexer.tokens[0].literal.clone().unwrap() {
+            LiteralValue::FValue(val) => assert_eq!(val, 123.123),
+            _ => panic!("Incorrect literal type"),
+        }
+        match lexer.tokens[1].literal.clone().unwrap() {
+            LiteralValue::FValue(val) => assert_eq!(val, 321.0),
+            _ => panic!("Incorrect literal type"),
+        }
+        match lexer.tokens[2].literal.clone().unwrap() {
+            LiteralValue::FValue(val) => assert_eq!(val, 5.0),
             _ => panic!("Incorrect literal type"),
         }
     }

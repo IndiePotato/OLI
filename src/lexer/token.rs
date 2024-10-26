@@ -12,7 +12,7 @@ pub enum TokenType {
     SemiColon,
     Slash,
     Star,
-    //One or Two chracater Tokens
+    // One or Two Character Tokens
     Bang,
     BangEqual,
     Equal,

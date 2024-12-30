@@ -1,4 +1,5 @@
-use crate::lexer::token::Token;
+use crate::ast::parser;
+use crate::lexer::token::{LiteralValue as TokenLiteralValue, Token, TokenType};
 
 pub enum LiteralValue {
     Number(f32),
@@ -6,6 +7,22 @@ pub enum LiteralValue {
     True,
     False,
     Nil,
+}
+
+fn unwrap_as_f32(literal: Option<TokenLiteralValue>) -> f32 {
+    match literal {
+        Some(TokenLiteralValue::IntValue(x)) => x as f32,
+        Some(TokenLiteralValue::FValue(x)) => x as f32,
+        _ => panic!("Couldn't unwrap as f32"),
+    }
+}
+
+fn unwrap_as_string(literal: Option<TokenLiteralValue>) -> String {
+    match literal {
+        Some(TokenLiteralValue::StringValue(s)) => s.clone(),
+        Some(TokenLiteralValue::IdentifierValue(s)) => s.clone(),
+        _ => panic!("Could not unwrap as string"),
+    }
 }
 
 impl LiteralValue {
@@ -16,6 +33,17 @@ impl LiteralValue {
             LiteralValue::True => "True".to_string(),
             LiteralValue::False => "False".to_string(),
             LiteralValue::Nil => "Nil".to_string(),
+        }
+    }
+
+    pub fn from_token(token: Token) -> Self {
+        match token.token_type {
+            TokenType::Number => Self::Number(unwrap_as_f32(token.literal)),
+            TokenType::StringLiteral => Self::StringValue(unwrap_as_string(token.literal)),
+            TokenType::False => Self::False,
+            TokenType::True => Self::True,
+            TokenType::Nil => Self::Nil,
+            _ => panic!("Couldn't create LiteralValue from {:?}", token),
         }
     }
 }
@@ -98,14 +126,14 @@ mod tests {
             line_number: 0,
         };
         let ast = Binary {
-            left: Box::from(Unary {
+            left: Box::new(Unary {
                 operator: minus_token,
                 right: Box::new(one_two_three),
             }),
             operator: multi,
             right: Box::new(group),
         };
-        
+
         assert_eq!(ast.to_string(), "(* (- 123) (group 45.67))".to_string())
     }
 }

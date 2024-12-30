@@ -7,6 +7,7 @@ use std::io::{self, BufRead, Write};
 use std::process::exit;
 
 use ast::expression::Expression;
+use ast::parser::Parser;
 use lexer::lexer::Lexer;
 
 fn run_file(path: &str) -> Result<(), String> {

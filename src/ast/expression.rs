@@ -1,4 +1,3 @@
-use crate::ast::parser;
 use crate::lexer::token::{LiteralValue as TokenLiteralValue, Token, TokenType};
 
 pub enum LiteralValue {

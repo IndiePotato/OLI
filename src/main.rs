@@ -6,7 +6,6 @@ use std::fs;
 use std::io::{self, BufRead, Write};
 use std::process::exit;
 
-use ast::expression::Expression;
 use ast::parser::Parser;
 use lexer::lexer::Lexer;
 
@@ -20,10 +19,10 @@ fn run_file(path: &str) -> Result<(), String> {
 fn run(contents: &str) -> Result<(), String> {
     let mut lexer = Lexer::new(contents);
     let tokens = lexer.scan_tokens()?;
-    for token in tokens {
-        println!("{:?}", token);
-    }
-    Ok(())
+    let mut parser = Parser::new(tokens);
+    let expression = parser.parse()?;
+    println!("{}", expression.to_string());
+    return Ok(());
 }
 
 fn run_prompt() -> Result<(), String> {
